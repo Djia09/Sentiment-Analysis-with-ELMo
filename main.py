@@ -49,7 +49,7 @@ def remove_stopwords(text, stop_words):
 
 def process(filtered_tokens, y, stop_words):    
     filtered_text = [" ".join(x) for x in filtered_tokens]
-    unique_text, unique_y = zip(*list(set(zip(filtered_text, y))))
+    unique_text, unique_y = zip(*[x for x in list(set(zip(filtered_text, y))) if len(x[0])>1])
     return list(unique_text), list(unique_y)
 
 def elmo_embedding(unique_text, elmo):
@@ -104,7 +104,7 @@ def main():
     print("Downloaded.")
     
     print('Start embedding...')
-    X_array = elmo_embedding(unique_text, elmo)
+    X_array = elmo_embedding([x.split() for x in unique_text], elmo)
     
     ### SVM classification
     print('Start SVM classification on splitting data...')
@@ -122,6 +122,7 @@ def main():
     df_test = pd.read_csv(DIR+'test.tsv', sep='\t')
     sentences_test = list(df_test.Phrase)
     clean_text_test = cleaning_text(sentences_test, wordnet_lemmatizer)
+    clean_text_test = [x for x in clean_text_test if len(x)>1]
     filtered_tokens_test = remove_stopwords(clean_text_test, stop_words)
     
     ### ELMo embedding on testing data + submission generation
