@@ -1,0 +1,5 @@
+pandas
+nltk
+sklearn
+seaborn
+allennlp
