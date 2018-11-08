@@ -22,6 +22,23 @@ from allennlp.commands.elmo import ElmoEmbedder
 
 DIR = './Perso/Kaggle/Sentiment-Analysis-on-Movie-Reviews/'
 
+def int_to_cat(y):
+    y_cat = []
+    for label in y:
+        if label == 0:
+            y_cat.append('negative')
+        elif label == 1:
+            y_cat.append('somewhat negative')
+        elif label == 2:
+            y_cat.append('neutral')
+        elif label == 3:
+            y_cat.append('somewhat positive')
+        elif label == 4:
+            y_cat.append('positive')
+        else:
+            print('Value not between 0 and 4 in the labels !!')
+    return y_cat
+
 def strip_accents(text):
     try:
         text = unicode(text, 'utf-8')
@@ -53,12 +70,16 @@ def process(filtered_tokens, y, stop_words):
     return list(unique_text), list(unique_y)
 
 def elmo_embedding(unique_text, elmo):
+    # unique_text: list of tokens
     X_array = np.zeros((len(unique_text), 256))
     i = 1
     start = time.time()
-    for x in unique_text:    
-        X = elmo.embed_sentence(x.split())
-        X_array[i-1,:] = np.mean(np.mean(X, axis=0), axis=0)
+    for x in unique_text:
+        if x == []:
+            X_array[i-1,:] = np.zeros((256,))
+        else:
+            X = elmo.embed_sentence(x)
+            X_array[i-1,:] = np.mean(np.mean(X, axis=0), axis=0)
         if i%100 == 0:
             print(str(i)+'/'+str(len(unique_text))+' done in %fs' % (time.time()-start))
             start = time.time()
@@ -68,7 +89,7 @@ def elmo_embedding(unique_text, elmo):
 def svmClassification(X, y):
     start = time.time()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-    clf = SGDClassifier(loss='log')#MultinomialNB()
+    clf = SGDClassifier(loss='log', class_weight="balanced")#MultinomialNB()
     clf.fit(X_train, y_train)
     y_pred_train = clf.predict(X_train)
     y_pred_test = clf.predict(X_test)
@@ -79,60 +100,62 @@ def svmClassification(X, y):
 
     cm = confusion_matrix(y_test, y_pred_test)
     sns_heat = sns.heatmap(cm, annot=True, fmt="d", xticklabels=list(set(y_test)), yticklabels=list(set(y_pred_test)))
-    sns_heat.savefig(DIR+'./confusion_matrix.png')
+    fig = sns_heat.get_figure()
+    fig.savefig(DIR+'./confusion_matrix.png')
 
-def main():
-    ### Import and cleaning training data
-    print('Import datas...')
-    df = pd.read_csv(DIR+'train.tsv', sep='\t')
-    sentences = list(df.Phrase)
-    y = list(df.Sentiment)
+#def main():
+### Import and cleaning training data
+print('Import datas...')
+df = pd.read_csv(DIR+'train.tsv', sep='\t')
+sentences = list(df.Phrase)
+y = list(df.Sentiment)
+#y_cat = int_to_cat(y)
+
+print('Start cleaning...')
+stop_words = set(stopwords.words('english'))
+wordnet_lemmatizer = WordNetLemmatizer()
+clean_text = cleaning_text(sentences, wordnet_lemmatizer)
+filtered_tokens = remove_stopwords(clean_text, stop_words)
+unique_text, unique_y = process(filtered_tokens, y, stop_words)
+
+### ELMo embedding on training data    
+weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
+options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json"
+
+print("Downloading elmo model...")
+elmo = ElmoEmbedder(options_file, weight_file)
+print("Downloaded.")
+
+print('Start embedding...')
+X_array = elmo_embedding([x.split() for x in unique_text], elmo)
+
+### SVM classification
+print('Start SVM classification on splitting data...')
+svmClassification(X_array, unique_y)    
+
+### Training on the whole data
+print('Classification training on the whole dataset...')
+start = time.time()
+clf = SGDClassifier(loss='log', class_weight="balanced")#MultinomialNB()
+clf.fit(X_array, unique_y)
+print('Training done in %fs' % (time.time()-start))
+
+### Import, cleaning and prediction on test data
+print('Import test datas...')
+df_test = pd.read_csv(DIR+'test.tsv', sep='\t')
+sentences_test = list(df_test.Phrase)
+clean_text_test = cleaning_text(sentences_test, wordnet_lemmatizer)
+clean_text_test = [x for x in clean_text_test if len(x)>1]
+filtered_tokens_test = remove_stopwords(clean_text_test, stop_words)
+
+### ELMo embedding on testing data + submission generation
+print('Start embedding test...')
+start = time.time()
+X_array_test = elmo_embedding(filtered_tokens_test, elmo)
+print('Embedding test done in %fs' % (time.time()-start))
+
+y_pred = clf.predict(X_array_test)
+df_test['Sentiment'] = y_pred
+df_test[['SentenceId', 'Sentiment']].to_csv(DIR+'submission.csv', index=False, sep=',')
     
-    print('Start cleaning...')
-    stop_words = set(stopwords.words('english'))
-    wordnet_lemmatizer = WordNetLemmatizer()
-    clean_text = cleaning_text(sentences, wordnet_lemmatizer)
-    filtered_tokens = remove_stopwords(clean_text, stop_words)
-    unique_text, unique_y = process(filtered_tokens, y, stop_words)
-    
-    ### ELMo embedding on training data    
-    weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
-    options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json"
-    
-    print("Downloading elmo model...")
-    elmo = ElmoEmbedder(options_file, weight_file)
-    print("Downloaded.")
-    
-    print('Start embedding...')
-    X_array = elmo_embedding([x.split() for x in unique_text], elmo)
-    
-    ### SVM classification
-    print('Start SVM classification on splitting data...')
-    svmClassification(X_array, unique_y)    
-    
-    ### Training on the whole data
-    print('Classification training on the whole dataset...')
-    start = time.time()
-    clf = SGDClassifier(loss='log')#MultinomialNB()
-    clf.fit(X_array, unique_y)
-    print('Training done in %fs' % (time.time()-start))
-    
-    ### Import, cleaning and prediction on test data
-    print('Import test datas...')
-    df_test = pd.read_csv(DIR+'test.tsv', sep='\t')
-    sentences_test = list(df_test.Phrase)
-    clean_text_test = cleaning_text(sentences_test, wordnet_lemmatizer)
-    clean_text_test = [x for x in clean_text_test if len(x)>1]
-    filtered_tokens_test = remove_stopwords(clean_text_test, stop_words)
-    
-    ### ELMo embedding on testing data + submission generation
-    print('Start embedding test...')
-    start = time.time()
-    X_array_test = elmo_embedding(filtered_tokens_test, elmo)
-    print('Embedding test done in %fs' % (time.time()-start))
-    
-    y_pred = clf.predict(X_array_test)
-    df_test['Sentiment'] = y_pred
-    df_test[['SentenceId', 'Sentiment']].to_csv(DIR+'submission.csv', index=False, sep=',')
-    
-main()
+#main()
