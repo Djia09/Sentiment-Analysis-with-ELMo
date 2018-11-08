@@ -93,7 +93,7 @@ def main():
     wordnet_lemmatizer = WordNetLemmatizer()
     clean_text = cleaning_text(sentences, wordnet_lemmatizer)
     filtered_tokens = remove_stopwords(clean_text, stop_words)
-    unique_text, unique_y = process(filtered_tokens, y)
+    unique_text, unique_y = process(filtered_tokens, y, stop_words)
     
     ### ELMo embedding on training data    
     weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
