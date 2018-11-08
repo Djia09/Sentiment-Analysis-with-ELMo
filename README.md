@@ -37,3 +37,5 @@ To get the submission.csv in Kaggle format, just run:
 ```
 python main.py
 ```
+## Author
+David JIA
