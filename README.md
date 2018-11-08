@@ -15,6 +15,8 @@ It gives reviews in english, categorized in 5 classes:
 ELMo is a deep contextualized word representation that models both complex characteristics of word use (e.g., syntax and semantics), and how these uses vary across linguistic contexts (i.e., to model polysemy). These word vectors are learned functions of the internal states of a deep bidirectional language model (biLM), which is pre-trained on a large Wikipedia corpus. 
 ELMo embedding method is detailed on [Peters et al. (2018)](https://arxiv.org/abs/1802.05365) article.
 
+The model is available on AllenNLP, an open-source NLP library built on PyTorch. More details on [AllenNLP](https://www.semanticscholar.org/paper/A-Deep-Semantic-Natural-Language-Processing-Gardner-Grus/a5502187140cdd98d76ae711973dbcdaf1fef46d) article.
+
 ### Prerequisites
 Python 3
 Conda (for creating a clean environment, but you can also create it with virtualenv)
@@ -32,6 +34,10 @@ conda create -n allennlp python=3.6
 source activate allennlp
 pip install allennlp
 ```
+
+### Pre-trained model 
+Pre-trained model and their description are given on https://allennlp.org/elmo. 
+To reproduce our results, you need to download [weights](https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5) and [options](https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json).
 ## Running the test
 To get the submission.csv in Kaggle format, just run:
 ```
