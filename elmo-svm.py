@@ -159,9 +159,7 @@ def main():
     sentences_test = list(df_test.Phrase)
     print("There are %d testing sentences." % (len(sentences_test)))
     clean_text_test = cleaning_text(sentences_test, wordnet_lemmatizer)
-    print('DEBUG clean test length: ', len(clean_text_test))
     clean_text_test = [x if len(x)>1 else '' for x in clean_text_test]
-    print('DEBUG BIS clean test length: ', len(clean_text_test))
     filtered_tokens_test = remove_stopwords(clean_text_test, stop_words)
 
     ### ELMo embedding on testing data + submission generation
@@ -175,10 +173,7 @@ def main():
         X_array_test = elmo_embedding(filtered_tokens_test, elmo)
         np.save('X_test.npy', X_array_test)
     print('Embedding test done in %fs' % (time.time()-start))
-    print('DEBUG test length: ', len(X_array_test))
     y_pred = clf.predict(X_array_test)
-    print('DEBUG test pred length: ', len(y_pred))
-    print('DEBUG dataframe test length: ', len(df_test))
     df_test['Sentiment'] = y_pred
     df_test[['SentenceId', 'Sentiment']].to_csv(os.path.join(DIR,'submission.csv'), index=False, sep=',')
     print('Submission created at', os.path.join(DIR,'submission.csv'))
