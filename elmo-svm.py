@@ -11,6 +11,7 @@ import pandas as pd
 import re
 import time
 import unicodedata
+import os
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
@@ -20,7 +21,7 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 import seaborn as sns
 from allennlp.commands.elmo import ElmoEmbedder
 
-DIR = './Perso/Kaggle/Sentiment-Analysis-on-Movie-Reviews/'
+DIR = './'
 
 def int_to_cat(y):
     y_cat = []
@@ -101,14 +102,18 @@ def svmClassification(X, y):
     cm = confusion_matrix(y_test, y_pred_test)
     sns_heat = sns.heatmap(cm, annot=True, fmt="d", xticklabels=list(set(y_test)), yticklabels=list(set(y_pred_test)))
     fig = sns_heat.get_figure()
-    fig.savefig(DIR+'./confusion_matrix.png')
+    fig.savefig(os.path.join(DIR,'./confusion_matrix.png'))
+    print('Figure saved at ', os.path.join(DIR,'./confusion_matrix.png'))
+    # return clf
 
 def main():
     ### Import and cleaning training data
-    print('Import datas...')
-    df = pd.read_csv(DIR+'train.tsv', sep='\t')
+    print('Import datas at ', os.path.join(DIR,'train.tsv'))
+    df = pd.read_csv(os.path.join(DIR,'train.tsv'), sep='\t')
     sentences = list(df.Phrase)
     y = list(df.Sentiment)
+    print("There are %d training sentences." % (len(sentences)))
+    assert len(sentences)==len(y)
     #y_cat = int_to_cat(y)
 
     print('Start cleaning...')
@@ -126,16 +131,19 @@ def main():
     elmo = ElmoEmbedder(options_file, weight_file)
     print("Downloaded.")
 
-    print('Start embedding...')
+    print('Start training embedding...')
     start = time.time()
     try:
         X_array = np.load('X_train.npy')
+        print("Existing saved model found !")
     except FileNotFoundError:
+        print("No existing saved model found. Begin embedding...")
         X_array = elmo_embedding([x.split() for x in unique_text], elmo)
         np.save('X_train.npy', X_array)
     print('Model loaded in %fs.' % (time.time()-start))
+    print("X_train shape: ", X_array.shape)
     ### SVM classification
-    print('Start SVM classification on splitting data...')
+    print('Start SVM classification on splitting data to get the confusion matrix...')
     svmClassification(X_array, unique_y)    
 
     ### Training on the whole data
@@ -146,21 +154,33 @@ def main():
     print('Training done in %fs' % (time.time()-start))
 
     ### Import, cleaning and prediction on test data
-    print('Import test datas...')
-    df_test = pd.read_csv(DIR+'test.tsv', sep='\t')
+    print('Import test datas at ', os.path.join(DIR,'test.tsv'))
+    df_test = pd.read_csv(os.path.join(DIR,'test.tsv'), sep='\t')
     sentences_test = list(df_test.Phrase)
+    print("There are %d testing sentences." % (len(sentences_test)))
     clean_text_test = cleaning_text(sentences_test, wordnet_lemmatizer)
-    clean_text_test = [x for x in clean_text_test if len(x)>1]
+    print('DEBUG clean test length: ', len(clean_text_test))
+    clean_text_test = [x if len(x)>1 else '' for x in clean_text_test]
+    print('DEBUG BIS clean test length: ', len(clean_text_test))
     filtered_tokens_test = remove_stopwords(clean_text_test, stop_words)
 
     ### ELMo embedding on testing data + submission generation
     print('Start embedding test...')
     start = time.time()
-    X_array_test = elmo_embedding(filtered_tokens_test, elmo)
+    try:
+        X_array_test = np.load('X_test.npy')
+        print("Existing saved model found !")
+    except FileNotFoundError:
+        print("No existing saved model found. Begin embedding...")
+        X_array_test = elmo_embedding(filtered_tokens_test, elmo)
+        np.save('X_test.npy', X_array_test)
     print('Embedding test done in %fs' % (time.time()-start))
-
+    print('DEBUG test length: ', len(X_array_test))
     y_pred = clf.predict(X_array_test)
+    print('DEBUG test pred length: ', len(y_pred))
+    print('DEBUG dataframe test length: ', len(df_test))
     df_test['Sentiment'] = y_pred
-    df_test[['SentenceId', 'Sentiment']].to_csv(DIR+'submission.csv', index=False, sep=',')
+    df_test[['SentenceId', 'Sentiment']].to_csv(os.path.join(DIR,'submission.csv'), index=False, sep=',')
+    print('Submission created at', os.path.join(DIR,'submission.csv'))
     
 main()
