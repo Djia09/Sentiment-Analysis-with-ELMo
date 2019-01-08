@@ -18,8 +18,8 @@ ELMo embedding method is detailed on [Peters et al. (2018)](https://arxiv.org/ab
 The model is available on AllenNLP, an open-source NLP library built on PyTorch. More details on [AllenNLP](https://www.semanticscholar.org/paper/A-Deep-Semantic-Natural-Language-Processing-Gardner-Grus/a5502187140cdd98d76ae711973dbcdaf1fef46d) article.
 
 ### Prerequisites
-Python 3
-Conda (for creating a clean environment, but you can also create it with virtualenv)
+* Python 3
+* Conda (for creating a clean environment, but you can also create it with virtualenv)
 
 ### Installing
 Installation was tested on Ubuntu 18.04 and Windows 10, with Python 3.
