@@ -127,8 +127,13 @@ def main():
     print("Downloaded.")
 
     print('Start embedding...')
-    X_array = elmo_embedding([x.split() for x in unique_text], elmo)
-
+    start = time.time()
+    try:
+        X_array = np.load('X_train.npy')
+    except FileNotFoundError:
+        X_array = elmo_embedding([x.split() for x in unique_text], elmo)
+        np.save('X_train.npy', X_array)
+    print('Model loaded in %fs.' % (time.time()-start))
     ### SVM classification
     print('Start SVM classification on splitting data...')
     svmClassification(X_array, unique_y)    
