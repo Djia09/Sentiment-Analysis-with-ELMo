@@ -17,6 +17,9 @@ ELMo embedding method is detailed on [Peters et al. (2018)](https://arxiv.org/ab
 
 The model is available on AllenNLP, an open-source NLP library built on PyTorch. More details on [AllenNLP](https://www.semanticscholar.org/paper/A-Deep-Semantic-Natural-Language-Processing-Gardner-Grus/a5502187140cdd98d76ae711973dbcdaf1fef46d) article.
 
+## Details
+Our personal submissions were given with GloVe model with dimension 50 and 200, and also with ELMo model.
+
 ### Prerequisites
 * Python 3
 * Conda (for creating a clean environment, but you can also create it with virtualenv)
@@ -36,12 +39,17 @@ pip install allennlp
 ```
 
 ### Pre-trained model 
-Pre-trained model and their description are given on https://allennlp.org/elmo. 
+ELMo Pre-trained model and their description are given on https://allennlp.org/elmo. 
 To reproduce our results, you need to download [weights](https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5) and [options](https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x1024_128_2048cnn_1xhighway/elmo_2x1024_128_2048cnn_1xhighway_options.json).
+
+GloVe pre-trained models can be found [here](https://nlp.stanford.edu/projects/glove/) and the details about GloVe models are given in the article [GloVe: Global Vectors for Word Representation](https://nlp.stanford.edu/pubs/glove.pdf)
+
 ## Running the test
+The file GloVe.py load and create a GloVe model.
+
 To get the submission.csv in Kaggle format, just run:
 ```
-python main.py
+python elmo-svm.py
 ```
 ## Author
 David JIA
