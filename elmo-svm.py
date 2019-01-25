@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  7 18:44:54 2018
-
-@author: Stagiaire-3
-"""
 
 ### Processing and cleaning data
 import numpy as np
